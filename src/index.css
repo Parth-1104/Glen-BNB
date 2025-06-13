@@ -1,0 +1,31 @@
+/* src/input.css */
+
+@import "tailwindcss";
+
+/* Add your Google Fonts at the top */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Outfit:wght@100..900&family=Playfair:ital,opsz,wght@0,5..1200,300..900;1,5..1200,300..900&display=swap');
+
+
+@theme{
+  --color-primary:#edeae7;
+  --color-secondary:#FBBF24;
+
+  --font-weight-my-custom-weight: 315; 
+  --font-weight-another-one: 650;      
+
+}
+
+* {
+  font-family: "Inter", sans-serif;
+}
+
+.font-playfair {
+  font-family: Playfair !important;
+}
+
+/* Optionally set CSS theme tokens */
+
+@theme {
+  --font-primary: 'Outfit', sans-serif;
+  --font-playfair: 'Playfair', serif;
+}
