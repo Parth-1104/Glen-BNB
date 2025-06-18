@@ -2,7 +2,7 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import connectDB from "./configs/db.js";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkMiddleware, requireAuth } from "@clerk/express";
 import userRouter from "./routes/userRoutes.js";
 import hotelRouter from "./routes/hotelRoutes.js";
 import roomRouter from "./routes/roomRoutes.js";
@@ -15,23 +15,22 @@ connectDB();
 connectCloudinary();
 
 const app = express();
-app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(cors());
 
-// API to listen to Stripe Webhooks
-app.post("/api/stripe",express.raw({ type: "application/json" }),stripeWebhooks);
+app.post("/api/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
 
-// Middleware to parse JSON
 app.use(express.json());
-app.use(clerkMiddleware());
+app.use(clerkMiddleware()); // Must be before requireAuth()
 
-// API to listen to Clerk Webhooks
 app.use("/api/clerk", clerkWebhooks);
 
+// ✅ Protect these routes
+app.use("/api/user", requireAuth(), userRouter);
+app.use("/api/hotels", requireAuth(), hotelRouter);
+app.use("/api/rooms", requireAuth(), roomRouter);
+app.use("/api/bookings", requireAuth(), bookingRouter);
+
 app.get("/", (req, res) => res.send("API is working"));
-app.use("/api/user", userRouter);
-app.use("/api/hotels", hotelRouter);
-app.use("/api/rooms", roomRouter);
-app.use("/api/bookings", bookingRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

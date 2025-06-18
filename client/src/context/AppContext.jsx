@@ -30,22 +30,38 @@ export const AppProvider = ({ children }) => {
     };
 
     const fetchUser = async () => {
+        console.log("🔁 fetchUser called");
+      
         try {
-            const { data } = await axios.get('/api/user', { headers: { Authorization: `Bearer ${await getToken()}` } })
-            if (data.success) {
-                setIsOwner(data.role === "hotelOwner");
-                setSearchedCities(data.recentSearchedCities)
-            } else {
-                // Retry Fetching User Details after 5 seconds
-                // Useful when user creates account using email & password
-                setTimeout(() => {
-                    fetchUser();
-                }, 2000);
-            }
+          const token = await getToken();
+          console.log("🔐 Token:", token);
+      
+          if (!token) {
+            console.warn("⚠️ No token retrieved from Clerk");
+            return;
+          }
+      
+          const { data } = await axios.get("https://glen-bnb.vercel.app/api/user", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+      
+          console.log("✅ Data received:", data);
+      
+          if (data.success) {
+            setIsOwner(data.role === "hotelOwner");
+            setSearchedCities(data.recentSearchedCities);
+          } else {
+            console.warn("❌ Retry fetching user in 2s...");
+            setTimeout(fetchUser, 2000);
+          }
         } catch (error) {
-            toast.error(error.message)
+          console.error("❌ Error in fetchUser:", error.message);
+          toast.error(error.message);
         }
-    }
+      };
+      
 
     const fetchRooms = async () => {
         try {
@@ -62,10 +78,12 @@ export const AppProvider = ({ children }) => {
     }
 
     useEffect(() => {
+        console.log("👤 useEffect running - user is:", user);
         if (user) {
-            fetchUser();
+          fetchUser();
         }
-    }, [user]);
+      }, [user]);
+      
 
     useEffect(() => {
         fetchRooms();

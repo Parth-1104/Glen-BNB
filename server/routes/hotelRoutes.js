@@ -1,9 +1,16 @@
-import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
-import { registerHotel } from "../controllers/hotelController.js";
+import express from 'express';
+const router = express.Router();
 
-const hotelRouter = express.Router();
+router.post("/", async (req, res) => {
+    console.log("🔥 HOTEL POST route hit");
+    console.log("🔐 Auth:", req.auth);
 
-hotelRouter.post("/", protect, registerHotel);
+    if (!req.auth || !req.auth.userId) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
 
-export default hotelRouter;
+    // continue with hotel creation...
+    res.json({ success: true, message: "Hotel created successfully (dummy)" });
+});
+
+export default router;
