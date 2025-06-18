@@ -1,71 +1,108 @@
-import React, { useState } from 'react';
-import { roomsDummyData, userBookingsDummyData } from '../assets/assets';
-import moment from 'moment'; // optional: for date formatting
+import React, { useEffect, useState } from 'react'
+import Title from '../components/Title'
+import { assets } from '../assets/assets'
+import { useAppContext } from '../context/AppContext'
+import toast from 'react-hot-toast'
 
 const MyBookings = () => {
-  const [bookings, setBookings] = useState(userBookingsDummyData);
 
-  return (
-    <div className="px-4 mt-20 md:px-16 lg:px-24 xl:px-32 py-12">
-      <h1 className="text-3xl font-bold font-playfair mb-8 text-gray-900">My Bookings</h1>
+    const { axios, getToken, user } = useAppContext();
+    const [bookings, setBookings] = useState([]);
 
-      {bookings.length === 0 ? (
-        <p className="text-gray-600">You have no bookings yet.</p>
-      ) : (
-        <div className="space-y-8">
-          {bookings.map((booking) => {
-            const room = booking.room;
-            const hotel = booking.hotel;
 
-            return (
-              <div
-                key={booking._id}
-                className="border border-gray-200 rounded-xl shadow-sm p-5 flex flex-col md:flex-row items-start md:items-center gap-6"
-              >
-                {/* Room Image */}
-                <img
-                  src={room.images[0]}
-                  alt={room.roomType}
-                  className="w-full md:w-48 h-32 object-cover rounded-md"
-                />
+    const fetchUserBookings = async () => {
+        try {
+            const { data } = await axios.get('/api/bookings/user', { headers: { Authorization: `Bearer ${await getToken()}` } })
+            if (data.success) {
+                setBookings(data.bookings)
+            }
+            else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
-                {/* Booking Details */}
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {hotel.name} – {room.roomType}
-                  </h2>
-                  <p className="text-sm text-gray-600">{hotel.address}</p>
+    const handlePayment = async (bookingId) => {
+        try {
+            const { data } = await axios.post('/api/bookings/stripe-payment', { bookingId }, { headers: { Authorization: `Bearer ${await getToken()}` } })
+            if (data.success) {
+                window.location.href = data.url
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
-                  <div className="mt-3 text-sm text-gray-700 space-y-1">
-                    <p><span className="font-medium">Booking ID:</span> {booking._id}</p>
-                    <p><span className="font-medium">Check-In:</span> {moment(booking.checkInDate).format('MMM D, YYYY')}</p>
-                    <p><span className="font-medium">Check-Out:</span> {moment(booking.checkOutDate).format('MMM D, YYYY')}</p>
-                    <p><span className="font-medium">Guests:</span> {booking.guests}</p>
-                    <p><span className="font-medium">Payment Method:</span> {booking.paymentMethod}</p>
-                    <p>
-                      <span className="font-medium">Payment Status:</span>{' '}
-                      <span
-                        className={`font-semibold ${
-                          booking.isPaid ? 'text-green-600' : 'text-yellow-600'
-                        }`}
-                      >
-                        {booking.isPaid ? 'Paid' : 'Unpaid'}
-                      </span>
-                    </p>
-                    <p>
-                      <span className="font-medium">Booking Status:</span>{' '}
-                      <span className="capitalize">{booking.status}</span>
-                    </p>
-                    <p><span className="font-medium">Total Price:</span> ${booking.totalPrice}</p>
-                  </div>
+    useEffect(() => {
+        if (user) {
+            fetchUserBookings();
+        }
+    }, [user]);
+
+    return (
+        <div className='py-28 md:pb-35 md:pt-32 px-4 md:px-16 lg:px-24 xl:px-32'>
+            <Title title='My Bookings' subTitle='Easily manage your past, current, and upcoming hotel reservations in one place. Plan your trips seamlessly with just a few clicks' align='left' />
+            <div className="max-w-6xl mt-8 w-full text-gray-800">
+                <div className="hidden md:grid md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 font-medium text-base py-3">
+                    <div className="w-1/3">Hotels</div>
+                    <div className="w-1/3">Date & Timings</div>
+                    <div className="w-1/3">Payment</div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
-export default MyBookings;
+                {bookings.map((booking) => (
+                    <div key={booking._id} className="grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 py-6 first:border-t">
+                        <div className="flex flex-col md:flex-row">
+                            <img className="min-md:w-44 rounded shadow object-cover" src={booking.room.images[0]} alt="hotel-img" />
+                            <div className="flex flex-col gap-1.5 max-md:mt-3 min-md:ml-4">
+                                <p className="font-playfair text-2xl">
+                                    {booking.hotel.name}
+                                    <span className="font-inter text-sm"> ({booking.room.roomType})</span>
+                                </p>
+                                <div className="flex items-center gap-1 text-sm text-gray-500">
+                                    <img src={assets.locationIcon} alt="location-icon" />
+                                    <span>{booking.hotel.address}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-sm text-gray-500">
+                                    <img src={assets.guestsIcon} alt="guests-icon" />
+                                    <span>Guests: {booking.guests}</span>
+                                </div>
+                                <p className="text-base">Total: ${booking.totalPrice}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-row md:items-center md:gap-12 mt-3 gap-8">
+                            <div>
+                                <p>Check-In:</p>
+                                <p className="text-gray-500 text-sm">{new Date(booking.checkInDate).toDateString()}</p>
+                            </div>
+                            <div>
+                                <p>Check-Out:</p>
+                                <p className="text-gray-500 text-sm">{new Date(booking.checkOutDate).toDateString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-start justify-center pt-3">
+                            <div className="flex items-center gap-2">
+                                <div className={`h-3 w-3 rounded-full ${booking.isPaid ? "bg-green-500" : "bg-red-500"}`}></div>
+                                <p className={`text-sm ${booking.isPaid ? "text-green-500" : "text-red-500"}`}>
+                                    {booking.isPaid ? "Paid" : "Unpaid"}
+                                </p>
+                            </div>
+                            {!booking.isPaid && (
+                                <button onClick={()=> handlePayment(booking._id)} className="px-4 py-1.5 mt-4 text-xs border border-gray-400 rounded-full hover:bg-gray-50 transition-all cursor-pointer">
+                                    Pay Now
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+export default MyBookings

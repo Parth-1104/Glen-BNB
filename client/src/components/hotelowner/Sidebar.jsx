@@ -1,36 +1,25 @@
-import React from 'react';
+import React from 'react'
+import { assets } from '../../assets/assets';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, ListOrdered } from 'lucide-react'; // Optional icons
 
-const Sidebar1 = () => {
-  const links = [
-    { name: 'Dashboard', path: '/owner', icon: <LayoutDashboard size={18} /> },
-    { name: 'Add Room', path: '/owner/add-room', icon: <PlusCircle size={18} /> },
-    { name: 'List Room', path: '/owner/list-room', icon: <ListOrdered size={18} /> },
-  ];
+const Sidebar = () => {
 
-  return (
-    <div className="h-screen w-64 bg-white shadow-md border-r fixed top-0 left-0 p-6 flex flex-col">
-      <h2 className="text-2xl font-bold text-blue-600 mb-8">Hotel Panel</h2>
-      
-      <nav className="flex flex-col gap-4">
-        {links.map((link) => (
-          <NavLink
-            key={link.name}
-            to={link.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition ${
-                isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
-              }`
-            }
-          >
-            {link.icon}
-            {link.name}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
-  );
-};
+    const sidebarLinks = [
+        { name: "Dashboard", path: "/owner", icon: assets.dashboardIcon },
+        { name: "Add Room", path: "/owner/add-room", icon: assets.addIcon },
+        { name: "List Room", path: "/owner/list-room", icon: assets.listIcon },
+    ];
 
-export default Sidebar1;
+    return (
+        <div className="md:w-64 w-16 border-r h-full text-base border-gray-300 pt-4 flex flex-col transition-all duration-300">
+            {sidebarLinks.map((item, index) => (
+                <NavLink to={item.path} key={index} end='/owner' className={({ isActive }) => `flex items-center py-3 px-4 md:px-8 gap-3 ${isActive ? "border-r-4 md:border-r-[6px] bg-blue-600/10 border-blue-600 text-blue-600" : "hover:bg-gray-100/90 border-white text-gray-700"}`}>
+                    <img className="min-h-6 min-w-6" src={item.icon} alt={item.name} />
+                    <p className="md:block hidden text-center">{item.name}</p>
+                </NavLink>
+            ))}
+        </div>
+    );
+}
+
+export default Sidebar

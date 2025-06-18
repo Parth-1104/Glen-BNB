@@ -1,51 +1,83 @@
-import React from 'react';
-import { roomsDummyData, assets, facilityIcons } from '../../assets/assets'; // Adjust the path if needed
+import React, { useEffect } from 'react'
+import Title from '../../components/Title'
+import { useAppContext } from '../../context/AppContext';
+import toast from 'react-hot-toast';
 
 const ListRoom = () => {
-  return (
-    <div className=" ml-70 mt-20 p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Available Rooms</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {roomsDummyData.map((room) => (
-          <div key={room._id} className="bg-white shadow-lg rounded-xl overflow-hidden">
-            <img
-              src={room.images[0]}
-              alt={`${room.roomType}`}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-4">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">{room.roomType}</h2>
-              <p className="text-gray-500 mb-1">{room.hotel.name}</p>
-              <p className="text-sm text-gray-400 mb-2">{room.hotel.city}</p>
 
-              <div className="flex flex-wrap gap-2 mt-2 mb-4">
-                {room.amenities.map((amenity) => (
-                  <div
-                    key={amenity}
-                    className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full"
-                  >
-                    <img src={facilityIcons[amenity]} alt={amenity} className="w-4 h-4" />
-                    {amenity}
-                  </div>
-                ))}
-              </div>
+    const { axios, getToken, user } = useAppContext()
+    const [rooms, setRooms] = React.useState([])
 
-              <div className="flex justify-between items-center mt-4">
-                <p className="text-lg font-bold text-blue-600">${room.pricePerNight}/night</p>
-                <p
-                  className={`text-sm px-2 py-1 rounded ${
-                    room.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}
-                >
-                  {room.isAvailable ? 'Available' : 'Not Available'}
-                </p>
-              </div>
+    // Fetch Rooms of the Hotel Owner
+    const fetchRooms = async () => {
+        try {
+            const { data } = await axios.get('/api/rooms/owner', { headers: { Authorization: `Bearer ${await getToken()}` } })
+            if (data.success) {
+                setRooms(data.rooms)
+            }
+            else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    // Toggle Availability of the Room
+    const toggleAvailability = async (roomId) => {
+        const { data } = await axios.post("/api/rooms/toggle-availability", { roomId }, { headers: { Authorization: `Bearer ${await getToken()}` } })
+        if (data.success) {
+            toast.success(data.message)
+            fetchRooms()
+        } else {
+            toast.error(data.message)
+        }
+    }
+
+    // Fetch Rooms when user is logged in
+    useEffect(() => {
+        if (user) {
+            fetchRooms()
+        }
+    }, [user])
+
+    return (
+        <div>
+            <Title align='left' font='outfit' title='Room Listings' subTitle='View, edit, or manage all listed rooms. Keep the information up-to-date to provide the best experience for users.' />
+            <p className='text-gray-500 mt-8'>Total Hotels</p>
+            {/* Table with heads User Name, Room Name, Amount Paid, Payment Status */}
+            <div className='w-full max-w-3xl text-left border border-gray-300 rounded-lg max-h-80 overflow-y-scroll mt-3'>
+                <table className='w-full' >
+                    <thead className='bg-gray-50 '>
+                        <tr>
+                            <th className='py-3 px-4 text-gray-800 font-medium'>Name</th>
+                            <th className='py-3 px-4 text-gray-800 font-medium max-sm:hidden'>Facility</th>
+                            <th className='py-3 px-4 text-gray-800 font-medium'>Price / night</th>
+                            <th className='py-3 px-4 text-gray-800 font-medium text-center'>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className='text-sm'>
+                        {
+                            rooms.map((item, index) => (
+                                <tr key={index}>
+                                    <td className='py-3 px-4 text-gray-700 border-t border-gray-300'>{item.roomType}</td>
+                                    <td className='py-3 px-4 text-gray-400 border-t border-gray-300 max-sm:hidden'>{item.amenities.join(', ')}</td>
+                                    <td className='py-3 px-4 text-gray-400 border-t border-gray-300'>{item.pricePerNight}</td>
+                                    <td className='py-3 px-4  border-t border-gray-300 text-center text-sm text-red-500'>
+                                        <label className="relative inline-flex items-center cursor-pointer text-gray-900 gap-3">
+                                            <input type="checkbox" className="sr-only peer" onChange={() => toggleAvailability(item._id)} checked={item.isAvailable} />
+                                            <div className="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-blue-600 transition-colors duration-200"></div>
+                                            <span className="dot absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out peer-checked:translate-x-5"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+        </div>
+    )
+}
 
-export default ListRoom;
+export default ListRoom

@@ -1,77 +1,75 @@
-import React from 'react';
-import { assets } from '../assets/assets';
+import { useState } from "react";
+import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
+import { assets, cities } from "../assets/assets";
 
-const Hotelreg = () => {
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
-      <div className="relative bg-white rounded-2xl shadow-lg flex flex-col md:flex-row w-full max-w-4xl overflow-hidden">
-        {/* Image */}
-        <img
-          src={assets.regImage}
-          alt="Hotel"
-          className="hidden md:block md:w-1/2 object-cover"
-        />
+const HotelReg = () => {
+    const { setShowHotelReg, axios, getToken, setIsOwner } = useAppContext();
 
-        {/* Form */}
-        <div className="w-full md:w-1/2 p-8 relative">
-          <img
-            src={assets.closeIcon}
-            alt="Close"
-            className="absolute top-4 right-4 h-5 w-5 cursor-pointer"
-          />
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Register your Hotel
-          </h2>
+    const [name, setName] = useState("");
+    const [address, setAddress] = useState("");
+    const [contact, setContact] = useState("");
+    const [city, setCity] = useState("");
 
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Hotel Name</label>
-              <input
-              id='name'
-                type="text"
-                placeholder="e.g. Paradise Inn"
-                className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+    const onSubmitHandler = async (event) => {
+        try {
+            event.preventDefault();
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Location</label>
-              <input
-              id='city'
-                type="text"
-                placeholder="City, Country"
-                className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            const { data } = await axios.post(`/api/hotels/`, { name, contact, address, city }, { headers: { Authorization: `Bearer ${await getToken()}` } });
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                rows="3"
-                placeholder="Tell us about your hotel..."
-                className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              ></textarea>
-            </div>
+            if (data.success) {
+                toast.success(data.message);
+                setIsOwner(true);
+                setShowHotelReg(false);
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Upload Image</label>
-              <input
-                type="file"
-                className="mt-1 w-full text-gray-600"
-              />
-            </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
-            >
-              Submit
-            </button>
-          </form>
+    return (
+        <div onClick={() => setShowHotelReg(false)} className="fixed top-0 bottom-0 left-0 right-0 z-100 flex items-center justify-center bg-black/70">
+            <form onSubmit={onSubmitHandler} onClick={(e) => e.stopPropagation()} className="flex bg-white rounded-xl max-w-4xl max-md:mx-2" >
+                <img src={assets.regImage} alt="reg-image" className='w-1/2 rounded-xl hidden md:block' />
+                <div className="relative flex flex-col items-center md:w-1/2 p-8 md:p-10">
+                    <img src={assets.closeIcon} alt="close-icon" className='absolute top-4 right-4 h-4 w-4 cursor-pointer' onClick={() => setShowHotelReg(false)} />
+                    <p className="text-2xl font-semibold mt-6">Register Your Hotel</p>
+                    <div className="w-full mt-4">
+                        <label htmlFor="name" className="font-medium text-gray-500">Hotel Name</label>
+                        <input onChange={(e) => setName(e.target.value)} value={name} placeholder="Type here" className="border border-gray-200 rounded w-full px-3 py-2.5 mt-1 outline-indigo-500 font-light" type="text" required />
+                    </div>
+
+                    <div className="w-full mt-4">
+                        <label htmlFor="contact" className="font-medium text-gray-500">Phone</label>
+                        <input id="contact" onChange={(e) => setContact(e.target.value)} value={contact} placeholder="Type here" className="border border-gray-200 rounded w-full px-3 py-2.5 mt-1 outline-indigo-500 font-light" type="text" required />
+                    </div>
+
+                    <div className="w-full mt-4">
+                        <label htmlFor="address" className="font-medium text-gray-500">Address</label>
+                        <textarea id="address" rows="2" onChange={(e) => setAddress(e.target.value)} value={address} placeholder="Type here" className="border border-gray-200 rounded w-full px-3 py-2.5 mt-1 outline-indigo-500 font-light resize-none" type="text" required />
+                    </div>
+
+                    {/* Drop Down City */}
+                    <div className="w-full mt-4 max-w-60 mr-auto">
+                        <label htmlFor="city" className="font-medium text-gray-500">City</label>
+                        <select id="city" onChange={(e) => setCity(e.target.value)} value={city} className="border border-gray-200 rounded w-full px-3 py-2.5 mt-1 outline-indigo-500 font-light" required>
+                            <option value="">Select City</option>
+                            {cities.map((city) => (
+                                <option key={city} value={city}>{city}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button className="bg-indigo-500 hover:bg-indigo-600 transition-all text-white mr-auto px-6 py-2 rounded cursor-pointer mt-6">
+                        Register
+                    </button>
+                </div>
+            </form>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-export default Hotelreg;
+export default HotelReg;

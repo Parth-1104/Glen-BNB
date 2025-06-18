@@ -1,136 +1,128 @@
-import React, { useState } from 'react';
-import { assets, facilityIcons } from '../../assets/assets';
+import React, { useState } from 'react'
+import { assets } from '../../assets/assets'
+import Title from '../../components/Title'
+import toast from 'react-hot-toast'
+import { useAppContext } from '../../context/AppContext'
 
 const AddRoom = () => {
-  const [formData, setFormData] = useState({
-    roomType: '',
-    pricePerNight: '',
-    amenities: [],
-    images: [],
-    isAvailable: true,
-  });
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    if (type === 'checkbox') {
-      const newAmenities = checked
-        ? [...formData.amenities, value]
-        : formData.amenities.filter((a) => a !== value);
-      setFormData({ ...formData, amenities: newAmenities });
-    } else {
-      setFormData({ ...formData, [name]: value });
+    const { axios, getToken } = useAppContext()
+
+    const [images, setImages] = useState({ 1: null, 2: null, 3: null, 4: null })
+    const [loading, setLoading] = useState(false);
+
+    const [inputs, setInputs] = useState({
+        roomType: '',
+        pricePerNight: 0,
+        amenities: {
+            'Free WiFi': false,
+            'Free Breakfast': false,
+            'Room Service': false,
+            'Mountain View': false,
+            'Pool Access': false
+        }
+    })
+
+    const onSubmitHandler = async (e) => {
+        e.preventDefault()
+        // Check if all inputs are filled
+        if (!inputs.roomType || !inputs.pricePerNight || !inputs.amenities || !Object.values(images).some(image => image)) {
+            toast.error("Please fill in all the details")
+            return;
+        }
+        setLoading(true);
+        try {
+            const formData = new FormData()
+            formData.append('roomType', inputs.roomType)
+            formData.append('pricePerNight', inputs.pricePerNight)
+            // Converting Amenities to Array & keeping only enabled Amenities
+            const amenities = Object.keys(inputs.amenities).filter(key => inputs.amenities[key])
+            formData.append('amenities', JSON.stringify(amenities))
+
+            // Adding Images to FormData
+            Object.keys(images).forEach((key) => {
+                images[key] && formData.append('images', images[key])
+            })
+
+            const { data } = await axios.post('/api/rooms/', formData, { headers: { Authorization: `Bearer ${await getToken()}` } })
+
+            if (data.success) {
+                toast.success(data.message)
+                setInputs({
+                    roomType: '',
+                    pricePerNight: 0,
+                    amenities: {
+                        'Free WiFi': false,
+                        'Free Breakfast': false,
+                        'Room Service': false,
+                        'Mountain View': false,
+                        'Pool Access': false
+                    }
+                })
+                setImages({ 1: null, 2: null, 3: null, 4: null })
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        } finally {
+            setLoading(false);
+        }
     }
-  };
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setFormData({ ...formData, images: files });
-  };
+    return (
+        <form onSubmit={onSubmitHandler}>
+            <Title align='left' font='outfit' title='Add Room' subTitle='Fill in the details carefully and accurate room details, pricing, and amenities, to enhance the user booking experience.' />
+            {/* Upload Area For Images */}
+            <p className='text-gray-800 mt-10'>Images</p>
+            <div className='grid grid-cols-2 sm:flex gap-4 my-2 flex-wrap'>
+                {Object.keys(images).map((key) => (
+                    <label key={key} htmlFor={`roomImage${key}`}>
+                        <img className='max-h-13 cursor-pointer opacity-80' src={images[key] ? URL.createObjectURL(images[key]) : assets.uploadArea} alt="" />
+                        <input type="file" accept='image/*' id={`roomImage${key}`} hidden
+                            onChange={e => setImages({ ...images, [key]: e.target.files[0] })} />
+                    </label>
+                ))}
+            </div>
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Room Added:', formData);
-    alert('Room successfully added!');
-    // You can call your backend API here
-  };
+            <div className='w-full flex max-sm:flex-col sm:gap-4 mt-4'>
 
-  return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-3xl font-semibold text-gray-800 mb-6">Add New Room</h2>
+                <div className='flex-1 max-w-48'>
+                    <p className='text-gray-800 mt-4'>Room Type</p>
+                    <select className='border opacity-70 border-gray-300 mt-1 rounded p-2 w-full' value={inputs.roomType} onChange={(e) => setInputs({ ...inputs, roomType: e.target.value })}>
+                        <option value=''>Select Room Type</option>
+                        <option value='Single Bed'>Single Bed</option>
+                        <option value='Double Bed'>Double Bed</option>
+                        <option value='Luxury Room'>Luxury Room</option>
+                        <option value='Family Suite'>Family Suite</option>
+                    </select>
+                </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-xl shadow-md border">
-        {/* Room Type */}
-        <div>
-          <label className="block font-medium mb-1">Room Type</label>
-          <input
-            type="text"
-            name="roomType"
-            value={formData.roomType}
-            onChange={handleChange}
-            placeholder="e.g., Deluxe, Double Bed"
-            className="w-full px-4 py-2 border rounded-md"
-            required
-          />
-        </div>
+                <div>
+                    <p className='mt-4 text-gray-800'>Price <span className='text-xs'>/night</span></p>
+                    <input type="number" placeholder='0' className='border border-gray-300 mt-1 rounded p-2 w-24' value={inputs.pricePerNight} onChange={(e) => setInputs({ ...inputs, pricePerNight: e.target.value })} />
+                </div>
 
-        {/* Price */}
-        <div>
-          <label className="block font-medium mb-1">Price Per Night (INR)</label>
-          <input
-            type="number"
-            name="pricePerNight"
-            value={formData.pricePerNight}
-            onChange={handleChange}
-            placeholder="e.g., 2499"
-            className="w-full px-4 py-2 border rounded-md"
-            required
-          />
-        </div>
+            </div>
 
-        {/* Amenities */}
-        <div>
-          <label className="block font-medium mb-1">Amenities</label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {Object.keys(facilityIcons).map((amenity) => (
-              <label key={amenity} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  value={amenity}
-                  checked={formData.amenities.includes(amenity)}
-                  onChange={handleChange}
-                  className="accent-blue-600"
-                />
-                <img src={facilityIcons[amenity]} alt={amenity} className="w-5 h-5" />
-                {amenity}
-              </label>
-            ))}
-          </div>
-        </div>
+            <p className='text-gray-800 mt-4'>Amenities</p>
+            <div className='flex flex-col flex-wrap mt-1 text-gray-400 max-w-sm'>
+                {Object.keys(inputs.amenities).map((amenity, index) => (
+                    <div key={index}>
+                        <input type='checkbox' id={`amenities${index + 1}`} checked={inputs.amenities[amenity]}
+                            onChange={() => setInputs({ ...inputs, amenities: { ...inputs.amenities, [amenity]: !inputs.amenities[amenity] } })}
+                        />
+                        <label htmlFor={`amenities${index + 1}`}> {amenity} </label>
+                    </div>
+                ))}
+            </div>
 
-        {/* Images Upload */}
-        <div>
-          <label className="block font-medium mb-1">Upload Room Images</label>
-          <div className="border border-dashed p-6 rounded-md flex flex-col items-center gap-3 bg-gray-50">
-            <img src={assets.uploadArea} alt="upload" className="w-12" />
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="text-sm"
-            />
-            {formData.images.length > 0 && (
-              <p className="text-green-600 text-sm">
-                {formData.images.length} image(s) selected
-              </p>
-            )}
-          </div>
-        </div>
+            <button className='bg-primary text-white px-8 py-2 rounded mt-8 cursor-pointer' disabled={loading}>
+                {loading ? "Adding..." : "Add Room"}
+            </button>
+        </form>
+    )
+}
 
-        {/* Availability */}
-        <div className="flex items-center gap-3">
-          <label className="font-medium">Available:</label>
-          <input
-            type="checkbox"
-            name="isAvailable"
-            checked={formData.isAvailable}
-            onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-            className="accent-green-600"
-          />
-        </div>
-
-        {/* Submit */}
-        <div>
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-          >
-            Add Room
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-export default AddRoom;
+export default AddRoom
