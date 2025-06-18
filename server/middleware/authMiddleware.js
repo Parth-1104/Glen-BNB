@@ -11,7 +11,7 @@ export const protect = async (req, res, next) => {
     const payload = await verifyToken(token); // Clerk token verification
     const clerkId = payload.sub;
 
-    const user = await User.findById(clerkId);
+    const user = await User.findById({clerkId});
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
