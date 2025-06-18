@@ -3,13 +3,18 @@
 // GET /api/user/
 export const getUserData = async (req, res) => {
   try {
-    const role = req.user.role;
-    const recentSearchedCities = req.user.recentSearchedCities;
-    res.json({ success: true, role, recentSearchedCities });
-  } catch (error) {
-    res.json({ success: false, message: error.message });
+    const user = req.user; // Already attached in middleware
+    res.json({
+      success: true,
+      role: user.role,
+      recentSearchedCities: user.recentSearchedCities || [],
+    });
+  } catch (err) {
+    console.error("Fetch user error:", err.message);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 
 // Store User Recent Searched Cities
 // POST /api/user/recent-searched-cities

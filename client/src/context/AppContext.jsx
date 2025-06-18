@@ -65,7 +65,7 @@ export const AppProvider = ({ children }) => {
 
     const fetchRooms = async () => {
         try {
-            const { data } = await axios.get('/api/rooms')
+            const { data } = await axios.get('https://glen-bnb.vercel.app/api/rooms')
             if (data.success) {
                 setRooms(data.rooms)
             }

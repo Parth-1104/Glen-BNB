@@ -6,16 +6,10 @@ import { v2 as cloudinary } from "cloudinary";
 export const createRoom = async (req, res) => {
   try {
     const { roomType, pricePerNight, amenities } = req.body;
+    const user = req.user;
 
-    const clerkUserId = req.auth?.userId;
-    if (!clerkUserId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    // Find the user using clerkId
-    const user = await User.findOne({ clerkId: clerkUserId });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const hotel = await Hotel.findOne({ owner: user._id });
@@ -23,12 +17,9 @@ export const createRoom = async (req, res) => {
       return res.status(404).json({ success: false, message: "No Hotel found" });
     }
 
-    // Upload images to Cloudinary
-    const uploadImages = req.files.map(async (file) => {
-      const response = await cloudinary.uploader.upload(file.path);
-      return response.secure_url;
-    });
-    const images = await Promise.all(uploadImages);
+    const images = await Promise.all(
+      req.files.map(file => cloudinary.uploader.upload(file.path).then(res => res.secure_url))
+    );
 
     await Room.create({
       hotel: hotel._id,
@@ -41,9 +32,10 @@ export const createRoom = async (req, res) => {
     res.json({ success: true, message: "Room created successfully" });
   } catch (error) {
     console.error("Room creation error:", error);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // API to get all rooms
 // GET /api/rooms
